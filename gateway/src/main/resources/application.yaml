@@ -1,0 +1,25 @@
+server:
+  port: 8111
+spring:
+  application:
+    name: zuulserver
+
+zuul:
+  # endpoints that this gateway will redirect for user
+  routes:
+    product_service:
+      path: /api/products/**
+      url: http://localhost:8080/products
+    user_service:
+      path: /api/user/**
+      url: http://localhost:8081/user
+
+# the key for JWT signature.
+# The same key should be injected to the services protected by this gateway to verify the JWT.
+JWT_key: ABCDEFGHABCDEFGHABCDEFGHABCDEFGHABCDEFGHABCDEFGH
+
+# authFree is white list. The users don't need authentication to access the endpoints in the list.
+authFree:
+  - /api/products/
+
+
