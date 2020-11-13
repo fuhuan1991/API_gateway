@@ -17,9 +17,19 @@ zuul:
 # the key for JWT signature.
 # The same key should be injected to the services protected by this gateway to verify the JWT.
 JWT_key: ABCDEFGHABCDEFGHABCDEFGHABCDEFGHABCDEFGHABCDEFGH
+# the name of the header tht stores JWT
+JWT_header: API_token
+# the prefix in JWT header, so the final header should be: prefix+JWT
+JWT_header_prefix: Bearer
+# the valid time of a JWT
+JWT_valid_time: 86400000 # 1 day
+# the value of sub claim in JWT payload
+JWT_subject: api permission
 
 # authFree is white list. The users don't need authentication to access the endpoints in the list.
-authFree:
+auth_free_list:
   - /api/products/
 
+# the url for authentication service
+authentication_url: http://localhost:9000/auth
 

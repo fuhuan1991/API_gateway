@@ -27,10 +27,6 @@ import java.util.regex.Pattern;
 public class AuthFilter extends ZuulFilter {
 
     private static Logger log = LoggerFactory.getLogger(AuthFilter.class);
-    public static final long EXPIRATION_TIME = 86400000; // 1 day
-    public static final String TOKEN_PREFIX = "Bearer ";
-    public static final String JWT_HEADER = "API_token";
-    public static final String JWT_SUBJECT = "api permission";
     private HashSet<Pattern> authFree = new HashSet<>();
 
     @Autowired
@@ -39,11 +35,12 @@ public class AuthFilter extends ZuulFilter {
     @Autowired
     private AuthUtil authUtil;
 
-    public AuthFilter(YAMLConfig myConfig) {
+    public AuthFilter(YAMLConfig myConfig, AuthUtil authUtil) {
         this.myConfig = myConfig;
+        this.authUtil = authUtil;
         // get white list from yaml file.
         // all the endpoints in white list is free from authentication
-        List<String> authFreeList = this.myConfig.getAuthFree();
+        List<String> authFreeList = this.myConfig.getAuth_free_list();
         Iterator<String> iter = authFreeList.iterator();
         while (iter.hasNext()) {
             Pattern p = Pattern.compile("^" + iter.next() + "(.*)");
@@ -81,54 +78,24 @@ public class AuthFilter extends ZuulFilter {
         System.out.println("-----Auth Filter-----");
         RequestContext ctx = RequestContext.getCurrentContext();
         HttpServletRequest request = ctx.getRequest();
-
         System.out.println(request.getMethod() + "  " + request.getRequestURL());
 
         // check JWT in request
         System.out.println("check JWT in request...");
-        String JWTString = request.getHeader(JWT_HEADER);
-        // get jwt key from YAML file
-        String jwtKey = this.myConfig.getJWT_key();
-
-        if (JWTString != null && JWTString.length() > 0) {
-            JWTString = JWTString.replace(TOKEN_PREFIX, "");
-            try {
-                Jws<Claims> jwtClaims = Jwts.parserBuilder()
-                        .setSigningKey(jwtKey)
-                        .build()
-                        .parseClaimsJws(JWTString);
-                String subject = (String) jwtClaims.getBody().get("sub");
-                Long exp = new Long((int)jwtClaims.getBody().get("exp")) * 1000;
-                Date expiration = new Date(exp);
-                Date current = new Date(System.currentTimeMillis());
-                if (expiration.after(current) && subject.equals(JWT_SUBJECT)) {
-                    // JWT is valid
-                    System.out.println("JWT is valid");
-                    return null;
-                }
-            } catch (JwtException ex) {
-                // JWT is not valid
-                System.out.println(ex);
-            }
+        if (this.authUtil.verifyJWT(request)) {
+            // if JWT is valid, no need to check the api key.
+            // return null to let this request pass the current filter
+            return null;
         }
 
         // no valid JWT in request, check api key
         String apiKey = request.getHeader("api_key");
         System.out.println("no valid JWT in request, check api key: " + apiKey);
+        boolean isApiKeyValid = this.authUtil.verifyAPIKey(apiKey, ctx);
 
-        boolean isApiValid = this.authUtil.verifyAPIKey(apiKey, ctx);
-
-        if (isApiValid) {
-            // generate a new JWT
-            String token = Jwts.builder()
-                    .setSubject(JWT_SUBJECT)
-                    .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
-                    .signWith(SignatureAlgorithm.HS256, jwtKey)
-                    .compact();
-
-            System.out.println("new JWT: " + token);
-            HttpServletResponse response = ctx.getResponse();
-            response.addHeader(JWT_HEADER, TOKEN_PREFIX + token);
+        if (isApiKeyValid) {
+            // generate a new JWT and attach it to the response
+            this.authUtil.attachJWT(ctx);
         } else {
             this.authUtil.forbiddenUserAccess(ctx, "invalid api key!");
         }

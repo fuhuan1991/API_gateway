@@ -17,7 +17,7 @@ public class ZuulServerApplication {
 	}
 
 	@Bean
-	public AuthFilter authFilter() { return new AuthFilter(yamlConfig()); }
+	public AuthFilter authFilter() { return new AuthFilter(yamlConfig(), authUtil()); }
 
 	@Bean
 	public RouteURLFilter routerFilter() {
@@ -33,7 +33,7 @@ public class ZuulServerApplication {
 	public YAMLConfig yamlConfig() { return new YAMLConfig(); }
 
 	@Bean
-	public AuthUtil authUtil() { return new AuthUtil(); }
+	public AuthUtil authUtil() { return new AuthUtil(yamlConfig()); }
 }
 
 
