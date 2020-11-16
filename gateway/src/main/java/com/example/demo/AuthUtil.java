@@ -38,14 +38,12 @@ public class AuthUtil {
      */
     public boolean verifyJWT(HttpServletRequest request) {
         String JWTString = request.getHeader(this.JWT_header);
-        // get jwt key from YAML file
-        String jwtKey = this.myConfig.getJWT_key();
 
         if (JWTString != null && JWTString.length() > 0) {
             JWTString = JWTString.replace(this.JWT_header_prefix, "");
             try {
                 Jws<Claims> jwtClaims = Jwts.parserBuilder()
-                        .setSigningKey(jwtKey)
+                        .setSigningKey(this.JWT_key)
                         .build()
                         .parseClaimsJws(JWTString);
                 String subject = (String) jwtClaims.getBody().get("sub");
@@ -100,7 +98,8 @@ public class AuthUtil {
     }
 
     /**
-     *  This method generate a new JWT and attach it to the response as a header
+     *  This method generate a new JWT and attach it to the response
+     *  and to the redirected request as a header
      */
     public void attachJWT(RequestContext ctx) {
         String token = Jwts.builder()
@@ -111,7 +110,8 @@ public class AuthUtil {
 
         System.out.println("new JWT: " + token);
         HttpServletResponse response = ctx.getResponse();
-        response.addHeader(this.JWT_header, this.JWT_header_prefix + token);
+        response.addHeader(this.JWT_header, this.JWT_header_prefix + " " + token);
+        ctx.addZuulRequestHeader(this.JWT_header, this.JWT_header_prefix + " " + token);
     }
 
 

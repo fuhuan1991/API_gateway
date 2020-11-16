@@ -84,7 +84,6 @@ public class AuthFilter extends ZuulFilter {
         System.out.println("check JWT in request...");
         if (this.authUtil.verifyJWT(request)) {
             // if JWT is valid, no need to check the api key.
-            // return null to let this request pass the current filter
             return null;
         }
 
@@ -94,7 +93,7 @@ public class AuthFilter extends ZuulFilter {
         boolean isApiKeyValid = this.authUtil.verifyAPIKey(apiKey, ctx);
 
         if (isApiKeyValid) {
-            // generate a new JWT and attach it to the response
+            // generate a new JWT and attach it to the response and to the redirected request
             this.authUtil.attachJWT(ctx);
         } else {
             this.authUtil.forbiddenUserAccess(ctx, "invalid api key!");

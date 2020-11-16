@@ -1,6 +1,7 @@
 const express = require('express');
 const bodyParser = require('body-parser')
 const multer = require('multer') // v1.0.5
+const colors = require('colors');
 
 const app = express();
 const port = 9000;
@@ -15,14 +16,19 @@ app.use(bodyParser.json()) // for parsing application/json
 app.use(bodyParser.urlencoded({ extended: true })) // for parsing application/x-www-form-urlencoded
 
 app.post('/auth', upload.array(), function (req, res) {
-	console.log('Auth:')
-  	console.log(req.body);
-  	const apiKey = req.body.api_key;
-  	if (users.has(apiKey)) {
-		res.send('success!');
-  	} else {
-  		res.status('401').send('illegal user');
-  	}
+	
+	const apiKey = req.body.api_key;
+
+  console.log('--------Message from authentication service--------');
+  console.log("User's api key is: " + apiKey);
+
+	if (users.has(apiKey)) {
+    console.log('Valid api key, authentication success!'.green);
+    res.send('success!');
+	} else {
+    console.log('Invalid api key, authentication failed!'.red)
+    res.status('401').send('illegal user');
+	}
   	
 })
 
