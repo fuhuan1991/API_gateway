@@ -13,6 +13,28 @@ zuul:
     user_service:
       path: /api/user/**
       url: http://localhost:8081/user
+  ratelimit:
+    enabled: true
+    repository: REDIS
+    policy-list:
+      product_service:
+        - limit: 10
+          refresh-interval: 60
+          type:
+            - origin # a rate limit based on users ip address
+      user_service:
+        # we have a 2-layer rate limit for user_service,
+        # rule 1: a certain user can only query this endpoint 5 times in a minute
+        # rule 2: this endpoint can only receive 7 requests in a minute
+        - limit: 5
+          refresh-interval: 60
+          type:
+            - http_header=api_key # a rate limit based on users api key
+        - limit: 7
+          refresh-interval: 60
+          type:
+            - url # a rate limit based on the requested endpoint
+
 
 # the key for JWT signature.
 # The same key should be injected to the services protected by this gateway to verify the JWT.
